@@ -1,25 +1,46 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Maze : MonoBehaviour
 {
-    public int Rows = 4;
-    public int Columns = 4;
+    public int Rows = 2;
+    public int Columns = 2;
     public GameObject Wall;
     public GameObject Floor;
+    public InputField HeightField;
+    public InputField WidthField;
 
     private MazeCell[,] grid;
     private int currentRow = 0;
     private int currentColumn = 0;
+    private bool scanComplete = false;
 
     // Start is called before the first frame update
     void Start()
     {
         // First, we create the grid with all the walls and floor.
         CreateGrid();
+    }
 
-        // Then we run the algorithm to carve the path top-left to bottom-right.
+    void GenerateGrid()
+    {
+        // Destroy all the childern of this transform.
+        foreach (Transform transform in transform)
+        {
+            Destroy(transform.gameObject);
+        }
+
+        // first, we create the grid with all the walls and floors.
+        CreateGrid();
+
+        // reset the algorithm variables.
+        currentRow = 0;
+        currentColumn = 0;
+        scanComplete = false;
+
+        // then we run the algorithm to carve the paths.
         HuntAndKill();
     }
 
@@ -60,65 +81,47 @@ public class Maze : MonoBehaviour
                 leftwall.transform.parent = transform;
                 rightwall.transform.parent = transform;
 
+                if (i == 0 && j == 0)
+                {
+                    Destroy(leftwall);
+                }
+
+                if (i == (Rows - 1) && j == (Columns - 1))
+                {
+                    Destroy(rightwall);
+                }
             }
         }
     }
 
-    bool AreThereUnvisitedNeighbors()
-    {
-        // Check up
-        if (IsCellUnvisitedAndWithinBundaries(currentRow - 1, currentColumn))
-        {
-            return true;
-        }
-        
-        // Check down
-        if (IsCellUnvisitedAndWithinBundaries(currentRow + 1, currentColumn))
-        {
-            return true;
-        }
-        
-        // Check left
-        if (IsCellUnvisitedAndWithinBundaries(currentRow, currentColumn + 1))
-        {
-            return true;
-        }
-        
-        // Check left
-        if (IsCellUnvisitedAndWithinBundaries(currentRow, currentColumn - 1))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    // Do a boundary check and unvisited check
-    bool IsCellUnvisitedAndWithinBundaries(int row, int column)
-    {
-        if (row >= 0 && row < Rows && column >= 0 && column < Columns && !grid[row, column].Visited)
-        {
-            return true;
-        }
-        return false;
-    }
-
     void HuntAndKill()
     {
-        // Mark the first cell of the random walk as visited.
+        // mark the first cell of the random walk as visited.
         grid[currentRow, currentColumn].Visited = true;
 
+        while (!scanComplete)
+        {
+            Walk();
+            Hunt();
+        }
+    }
+
+    void Walk()
+    {
         while (AreThereUnvisitedNeighbors())
         {
-            // Then go to a random direction.
+            // then go to a random direction.
             int direction = Random.Range(0, 4);
 
-            // Check up
+            // check up.
             if (direction == 0)
             {
-
-                if (IsCellUnvisitedAndWithinBundaries(currentRow - 1, currentColumn))
+                // make sure the above cell is unvisited and within grid boundaries.
+                if (IsCellUnvisitedAndWithinBoundaries(currentRow - 1, currentColumn))
                 {
+                    // Debug.Log("Went up.");
+
+                    // destroy the up wall of this cell if there's any.
                     if (grid[currentRow, currentColumn].UpWall)
                     {
                         Destroy(grid[currentRow, currentColumn].UpWall);
@@ -127,18 +130,22 @@ public class Maze : MonoBehaviour
                     currentRow--;
                     grid[currentRow, currentColumn].Visited = true;
 
+                    // destroy the down wall of the cell above if there's any.
                     if (grid[currentRow, currentColumn].DownWall)
                     {
                         Destroy(grid[currentRow, currentColumn].DownWall);
                     }
                 }
             }
-
-            // Check down
+            // check down.
             else if (direction == 1)
             {
-                if (IsCellUnvisitedAndWithinBundaries(currentRow + 1, currentColumn))
+                // make sure the below cell is unvisited and within grid boundaries.
+                if (IsCellUnvisitedAndWithinBoundaries(currentRow + 1, currentColumn))
                 {
+                    // Debug.Log("Went down.");
+
+                    // destroy the down wall of this cell if there's any.
                     if (grid[currentRow, currentColumn].DownWall)
                     {
                         Destroy(grid[currentRow, currentColumn].DownWall);
@@ -147,18 +154,22 @@ public class Maze : MonoBehaviour
                     currentRow++;
                     grid[currentRow, currentColumn].Visited = true;
 
+                    // destroy the up wall of the cell below if there's any.
                     if (grid[currentRow, currentColumn].UpWall)
                     {
                         Destroy(grid[currentRow, currentColumn].UpWall);
                     }
                 }
             }
-
-            // Check left
+            // check left.
             else if (direction == 2)
             {
-                if (IsCellUnvisitedAndWithinBundaries(currentRow, currentColumn - 1))
+                // make sure the left cell is unvisited and within grid boundaries.
+                if (IsCellUnvisitedAndWithinBoundaries(currentRow, currentColumn - 1))
                 {
+                    // Debug.Log("Went left.");
+
+                    // destroy the left wall of this cell if there's any.
                     if (grid[currentRow, currentColumn].LeftWall)
                     {
                         Destroy(grid[currentRow, currentColumn].LeftWall);
@@ -167,18 +178,22 @@ public class Maze : MonoBehaviour
                     currentColumn--;
                     grid[currentRow, currentColumn].Visited = true;
 
+                    // destroy the right wall of the cell at the left if there's any.
                     if (grid[currentRow, currentColumn].RightWall)
                     {
                         Destroy(grid[currentRow, currentColumn].RightWall);
                     }
                 }
             }
-
-            // Check right
+            // check right.
             else if (direction == 3)
             {
-                if (IsCellUnvisitedAndWithinBundaries(currentRow, currentColumn + 1))
+                // make sure the right cell is unvisited and within grid boundaries.
+                if (IsCellUnvisitedAndWithinBoundaries(currentRow, currentColumn + 1))
                 {
+                    // Debug.Log("Went right.");
+
+                    // destroy the right wall of this cell if there's any.
                     if (grid[currentRow, currentColumn].RightWall)
                     {
                         Destroy(grid[currentRow, currentColumn].RightWall);
@@ -187,6 +202,7 @@ public class Maze : MonoBehaviour
                     currentColumn++;
                     grid[currentRow, currentColumn].Visited = true;
 
+                    // destroy the left wall of the cell at the right if there's any.
                     if (grid[currentRow, currentColumn].LeftWall)
                     {
                         Destroy(grid[currentRow, currentColumn].LeftWall);
@@ -194,5 +210,221 @@ public class Maze : MonoBehaviour
                 }
             }
         }
+    }
+
+    // after random walk is complete, we run Hunt.
+    void Hunt()
+    {
+        // assume the scan is complete.
+        scanComplete = true;
+
+        for (int i = 0; i < Rows; i++)
+        {
+            for (int j = 0; j < Columns; j++)
+            {
+                // if the condition is satisfied that a cell is unvisited and it has a visited neighbour, do another random walk from new cell.
+                if (!grid[i, j].Visited && AreThereVisitedNeighbors(i, j))
+                {
+                    // scan is not actually complete.
+                    scanComplete = false;
+                    // set the new current row and column.
+                    currentRow = i;
+                    currentColumn = j;
+                    // mark it as visited.
+                    grid[currentRow, currentColumn].Visited = true;
+                    // and create a passage (by destroying wall/s) between the new current cell and any adjacent cell.
+                    DestroyAdjacentWall();
+
+                    return;
+                }
+            }
+        }
+    }
+
+    void DestroyAdjacentWall()
+    {
+        bool destroyed = false;
+
+        while (!destroyed)
+        {
+            // pick a random adjacent cell that is visited and within boundaries,
+            // and destroy the wall/s between the current cell and adjacent cell.
+            int direction = Random.Range(0, 4);
+
+            // check up.
+            if (direction == 0)
+            {
+                if (currentRow > 0 && grid[currentRow - 1, currentColumn].Visited)
+                {
+                    // Debug.Log("Destroyed down wall of " + (currentRow - 1) + " " + currentColumn
+                    //             + " and up wall of " + currentRow + " " + currentColumn);
+
+                    if (grid[currentRow, currentColumn].UpWall)
+                    {
+                        Destroy(grid[currentRow, currentColumn].UpWall);
+                    }
+
+                    if (grid[currentRow - 1, currentColumn].DownWall)
+                    {
+                        Destroy(grid[currentRow - 1, currentColumn].DownWall);
+                    }
+
+                    destroyed = true;
+                }
+            }
+            // check down.
+            else if (direction == 1)
+            {
+                if (currentRow < Rows - 1 && grid[currentRow + 1, currentColumn].Visited)
+                {
+                    // Debug.Log("Destroyed up wall of " + (currentRow + 1) + " " + currentColumn
+                    //             + " and down wall of " + currentRow + " " + currentColumn);
+
+                    if (grid[currentRow, currentColumn].DownWall)
+                    {
+                        Destroy(grid[currentRow, currentColumn].DownWall);
+                    }
+
+                    if (grid[currentRow + 1, currentColumn].UpWall)
+                    {
+                        Destroy(grid[currentRow + 1, currentColumn].UpWall);
+                    }
+
+                    destroyed = true;
+                }
+            }
+            // check left.
+            else if (direction == 2)
+            {
+                if (currentColumn > 0 && grid[currentRow, currentColumn - 1].Visited)
+                {
+                    // Debug.Log("Destroyed right wall of " + currentRow + " " + (currentColumn - 1)
+                    //         + " and left wall of " + currentRow + " " + currentColumn);
+
+                    if (grid[currentRow, currentColumn].LeftWall)
+                    {
+                        Destroy(grid[currentRow, currentColumn].LeftWall);
+                    }
+
+                    if (grid[currentRow, currentColumn - 1].RightWall)
+                    {
+                        Destroy(grid[currentRow, currentColumn - 1].RightWall);
+                    }
+
+                    destroyed = true;
+                }
+            }
+            // check right.
+            else if (direction == 3)
+            {
+                if (currentColumn < Columns - 1 && grid[currentRow, currentColumn + 1].Visited)
+                {
+                    // Debug.Log("Destroyed left wall of " + currentRow + " " + (currentColumn + 1)
+                    //         + " and right wall of " + currentRow + " " + currentColumn);
+
+                    if (grid[currentRow, currentColumn].RightWall)
+                    {
+                        Destroy(grid[currentRow, currentColumn].RightWall);
+                    }
+
+                    if (grid[currentRow, currentColumn + 1].LeftWall)
+                    {
+                        Destroy(grid[currentRow, currentColumn + 1].LeftWall);
+                    }
+
+                    destroyed = true;
+                }
+            }
+        }
+    }
+
+    bool AreThereUnvisitedNeighbors()
+    {
+        // check up.
+        if (IsCellUnvisitedAndWithinBoundaries(currentRow - 1, currentColumn))
+        {
+            return true;
+        }
+
+        // check down.
+        if (IsCellUnvisitedAndWithinBoundaries(currentRow + 1, currentColumn))
+        {
+            return true;
+        }
+
+        // check left.
+        if (IsCellUnvisitedAndWithinBoundaries(currentRow, currentColumn + 1))
+        {
+            return true;
+        }
+
+        // check right.
+        if (IsCellUnvisitedAndWithinBoundaries(currentRow, currentColumn - 1))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool AreThereVisitedNeighbors(int row, int column)
+    {
+        // check up.
+        if (row > 0 && grid[row - 1, column].Visited)
+        {
+            return true;
+        }
+
+        // check down.
+        if (row < Rows - 1 && grid[row + 1, column].Visited)
+        {
+            return true;
+        }
+
+        // check left.
+        if (column > 0 && grid[row, column - 1].Visited)
+        {
+            return true;
+        }
+
+        // check right.
+        if (column < Columns - 1 && grid[row, column + 1].Visited)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    // do a boundary check and unvisited check.
+    bool IsCellUnvisitedAndWithinBoundaries(int row, int column)
+    {
+        if (row >= 0 && row < Rows && column >= 0 && column < Columns
+            && !grid[row, column].Visited)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public void Regenerate()
+    {
+        int rows = 2;
+        int columns = 2;
+
+        if (int.TryParse(HeightField.text, out rows))
+        {
+            // set the minimum rows to 2.
+            Rows = Mathf.Max(2, rows);
+        }
+
+        if (int.TryParse(WidthField.text, out columns))
+        {
+            // set the minimum columns to 2.
+            Columns = Mathf.Max(2, columns);
+        }
+
+        GenerateGrid();
     }
 }
