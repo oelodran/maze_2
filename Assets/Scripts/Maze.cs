@@ -9,8 +9,13 @@ public class Maze : MonoBehaviour
     public int Columns = 2;
     public GameObject Wall;
     public GameObject Floor;
+    public GameObject Goal;
     public InputField HeightField;
     public InputField WidthField;
+
+    // robot2
+    public GameObject Robot2;
+    public Robot robot;
 
     private MazeCell[,] grid;
     private int currentRow = 0;
@@ -21,7 +26,12 @@ public class Maze : MonoBehaviour
     void Start()
     {
         // First, we create the grid with all the walls and floor.
-        CreateGrid();
+        //CreateGrid();
+    }
+
+    void Update()
+    {
+                
     }
 
     void GenerateGrid()
@@ -44,25 +54,25 @@ public class Maze : MonoBehaviour
         HuntAndKill();
     }
 
-    void CreateGrid()
+    public void CreateGrid()
     {
         float size = Wall.transform.localScale.x;
         grid = new MazeCell[Rows, Columns];
+
 
         for (int i = 0; i < Rows; i++)
         {
             for (int j = 0; j < Columns; j++)
             {
-
                 GameObject floor = Instantiate(Floor, new Vector2(j, -i), Quaternion.identity);
                 floor.name = "floor " + i + "-" + j;
 
                 GameObject upwall = Instantiate(Wall, new Vector2(j, -i + 0.5f), Quaternion.identity);
                 upwall.name = "upWall " + i + "-" + j;
-
+                
                 GameObject downwall = Instantiate(Wall, new Vector2(j, -i - 0.4f), Quaternion.identity);
                 downwall.name = "downWall " + i + "-" + j;
-
+                
                 GameObject leftwall = Instantiate(Wall, new Vector3(j - 0.39f, -i, 1), Quaternion.Euler(0, 0, 90));
                 leftwall.name = "leftWall " + i + "-" + j;
 
@@ -83,11 +93,19 @@ public class Maze : MonoBehaviour
 
                 if (i == 0 && j == 0)
                 {
-                    Destroy(leftwall);
+                    // create robot2
+                    GameObject robot2 = Instantiate(Robot2, new Vector3(j, -i, 1), Quaternion.identity);
+                    robot2.name = "robot2";
+                    robot2.transform.parent = transform;
+                    //    destroy(leftwall);
                 }
 
                 if (i == (Rows - 1) && j == (Columns - 1))
                 {
+                    // create goal
+                    GameObject goal = Instantiate(Goal, new Vector2(j, -i), Quaternion.identity);
+                    goal.name = "goal";
+                    goal.transform.parent = transform;
                     Destroy(rightwall);
                 }
             }
@@ -426,5 +444,12 @@ public class Maze : MonoBehaviour
         }
 
         GenerateGrid();
+    }
+
+    public int Choose()
+    {
+        Debug.Log("work");
+        return 1;
+        
     }
 }
